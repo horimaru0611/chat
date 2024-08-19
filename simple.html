@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="ryouri.css">
+<title>料理レシピ共有サイト</title>
+</head>
+<body>
+<h1>料理レシピ共有サイト</h1>
+<!-- コンテンツ表示画面 -->
+
+<div>
+    <div class="a">
+        <div class="nyuuryoku">
+    <div> 投稿者：<input type="text" id="uname"> </div>
+    <div> 料理名：<input type="text" id="rname"> </div>
+    <div> 準備物：<input type="text" id="yname"> </div>
+    <div>　手順：<textarea id="text" cols="30" rows="10"></textarea>
+        <button id="send">送信</button></div></div>
+        <div class="kensaku">
+            <div> 投稿者名で検索：<input type="text" id="uname_in"> 
+                <button id="uname_search">検索</button>
+            </div>
+            <div id="unameoutput" style="overflow: auto; height: 200px;width: 400px; border:1px solid red;"></div>
+            
+        </div>
+        <div class="kensaku">
+            <div> 料理名で検索：<input type="text" id="rname_in"> 
+                <button id="rname_search">検索</button>
+            </div>
+            <div id="rnameoutput" style="overflow: auto; height: 200px;width: 400px; border:1px solid red;"></div>
+            
+        </div>
+    </div>
+    <div id="output" style="overflow: auto;height: 300px; border:1px solid red"></div>
+</div>
+<!--/ コンテンツ表示画面 -->
+
+
+
+<!-- JQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<!-- JQuery -->
+
+
+<!--** 以下Firebase **-->
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getDatabase, ref, push, set, onChildAdded, remove, onChildRemoved, onValue , update} 
+    from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+  
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyC7iN-l-nRHrQFYYXiEmOxGqj_cSQxV6L8",
+      authDomain: "gsdemo-b5cdd.firebaseapp.com",
+      projectId: "gsdemo-b5cdd",
+      storageBucket: "gsdemo-b5cdd.appspot.com",
+      messagingSenderId: "1009097493001",
+      appId: "1:1009097493001:web:267ded3ce4709ea76786d8"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app); //RealtimeDBに接続
+    const dbRef = ref(db,"Chat"); //RealtimeDB内の"chat"を使う
+
+    
+
+    $("#send").on("click",function(){
+        const ymd = new Date();
+        const y = ymd.getFullYear();
+        const m = ymd.getMonth()+1;
+        const d = ymd.getDate();
+        const msg = {
+            uname: $("#uname").val(),
+            rname: $("#rname").val(),
+            yname: $("#yname").val(),
+            text:  $("#text").val(),
+            
+            date:  y+"年"+m+"月"+d+"日"
+        };
+        // console.log(msg);
+        const newPostRef = push(dbRef); //UniqeIDを発行
+        set(newPostRef, msg);           //set(ID名, 値);
+    });
+
+    //受信処理
+    onChildAdded(dbRef, function(data){
+        const msg = data.val(); //object変数で受け取る
+        const key = data.key;   //このデータのUniqeIDを取得
+        let h = '<p>';
+            h += msg.date;
+            h += '<br>';
+            h += "<投稿者名>";
+            h += '<br>';
+            h += msg.uname;
+            h += '<br>';
+            h += "<料理名>";
+            h += '<br>';
+            h += msg.rname;
+            h += '<br>';
+            h += "<準備するもの>";
+            h += '<br>';
+            h += msg.yname;
+            h += '<br>';
+            h += "<手順>";
+            h += '<br>';
+            h += msg.text;
+            h += '</p>';
+        $("#output").append(h);
+        let chatArea = document.getElementById('output'),
+        chatAreaHeight = chatArea.scrollHeight;
+        chatArea.scrollTop = chatAreaHeight;
+    });
+
+
+    $("#uname_search").on("click", function() {
+        const uname_in = $("#uname_in").val();
+
+        if (!uname_in) {
+            alert("検索したい投稿者名を入力してください。");
+            return;
+        }
+
+        // 既存のメッセージ表示をクリア
+        $("#unameoutput").empty();
+
+        // Firebaseからメッセージを一度だけ取得し、名前でフィルタリング
+        onValue(dbRef, function(snapshot) {
+            snapshot.forEach(function(childSnapshot) {
+                const msg = childSnapshot.val();
+                if (msg.uname.includes(uname_in)) {
+                    let h = '<p>';
+                        h += msg.date;
+                        h += '<br>';
+                        h += "<投稿者名>";
+                        h += '<br>';
+                        h += msg.uname;
+                        h += '<br>';
+                        h += "<料理名>";
+                        h += '<br>';
+                        h += msg.rname;
+                        h += '<br>';
+                        h += "<準備するもの>";
+                        h += '<br>';
+                        h += msg.yname;
+                        h += '<br>';
+                        h += "<手順>";
+                        h += '<br>';
+                        h += msg.text;
+                        h += '</p>';
+                    $("#unameoutput").append(h);
+                }
+            });
+        });
+    });
+
+    $("#rname_search").on("click", function() {
+        const rname_in = $("#rname_in").val();
+
+        if (!rname_in) {
+            alert("検索したい投稿者名を入力してください。");
+            return;
+        }
+
+        // 既存のメッセージ表示をクリア
+        $("#rnameoutput").empty();
+
+        // Firebaseからメッセージを一度だけ取得し、名前でフィルタリング
+        onValue(dbRef, function(snapshot) {
+            snapshot.forEach(function(childSnapshot) {
+                const msg = childSnapshot.val();
+                if (msg.rname.includes(rname_in)) {
+                    let h = '<p>';
+                        h += msg.date;
+                        h += '<br>';
+                        h += "<投稿者名>";
+                        h += '<br>';
+                        h += msg.uname;
+                        h += '<br>';
+                        h += "<料理名>";
+                        h += '<br>';
+                        h += msg.rname;
+                        h += '<br>';
+                        h += "<準備するもの>";
+                        h += '<br>';
+                        h += msg.yname;
+                        h += '<br>';
+                        h += "<手順>";
+                        h += '<br>';
+                        h += msg.text;
+                        h += '</p>';
+                    $("#rnameoutput").append(h);
+                }
+            });
+        });
+    });
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

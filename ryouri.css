@@ -1,0 +1,12 @@
+.a{
+    display: flex;
+    .nyuuryoku{
+        display: inline;
+    }
+    .kensaku{
+        
+       display: inline;
+        margin-left: 50px;
+    }
+    margin-bottom: 10px;
+}
